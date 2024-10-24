@@ -74,13 +74,20 @@ class GerenciadorDeMemoria:
 def main():
     tamanho_fisico = int(input('Digite o tamanho da memória física (em molduras): '))
     tamanho_virtual = int(input('Digite o tamanho da memória virtual (em páginas): '))
+    algoritmo = input('Digite o algoritmo de escalonamento (FIFO ou Round Robin): ').strip().upper()
     enderecos = list(map(int, input('Digite a lista de endereços virtuais a serem acessados (separados por espaço): ').split()))
 
     memoria = Memoria(tamanho_fisico, tamanho_virtual)
     tabela_paginas = TabelaDePaginas(tamanho_virtual)
     gerenciador = GerenciadorDeMemoria(memoria, tabela_paginas)
 
-    for endereco in enderecos:
+    if algoritmo == 'ROUND ROBIN':
+        escalonador = Escalonador([Processo(i, enderecos) for i in range(1)], algoritmo='Round Robin')
+    else:
+        escalonador = Escalonador([Processo(i, enderecos) for i in range(1)], algoritmo='FCFS')
+
+    processo = escalonador.obter_proximo_processo()
+    for endereco in processo.enderecos:
         gerenciador.acessar_pagina(endereco)
 
     print(f'Total de falhas de página: {gerenciador.falhas_de_pagina}')
