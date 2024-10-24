@@ -7,6 +7,7 @@ class Memoria:
         self.memoria_fisica = [-1] * tamanho_fisico  # Inicializa com molduras vazias
         self.memoria_virtual = list(range(tamanho_virtual))  # Páginas virtuais disponíveis
         self.fila_fifo = deque()  # Fila para gerenciar substituições de páginas (FIFO)
+        self.fila_round_robin = deque()  # Fila para escalonamento Round Robin
 
 class TabelaDePaginas:
     def __init__(self, tamanho_virtual):
@@ -32,6 +33,7 @@ class Escalonador:
         self.processos = processos
         self.algoritmo = algoritmo
         self.index_atual = 0
+        self.quantum = 2  # Quantum para o Round Robin
 
     def obter_proximo_processo(self):
         if self.algoritmo == 'FCFS':
@@ -44,10 +46,11 @@ class Escalonador:
             return processo
         
 class GerenciadorDeMemoria:
-    def __init__(self, memoria, tabela_paginas):
+    def __init__(self, memoria, tabela_paginas, algoritmo='FIFO'):
         self.memoria = memoria
         self.tabela_paginas = tabela_paginas
         self.falhas_de_pagina = 0
+        self.algoritmo = algoritmo
 
     def acessar_pagina(self, pagina):
         if not self.tabela_paginas.pagina_presente(pagina):
@@ -57,6 +60,12 @@ class GerenciadorDeMemoria:
 
     def tratar_falha_de_pagina(self, pagina):
         self.falhas_de_pagina += 1
+        if self.algoritmo == 'FIFO':
+            self.substituir_pagina_fifo(pagina)
+        elif self.algoritmo == 'Round Robin':
+            self.substituir_pagina_round_robin(pagina)
+
+    def substituir_pagina_fifo(self, pagina):
         if len(self.memoria.fila_fifo) < self.memoria.tamanho_fisico:
             moldura_livre = len(self.memoria.fila_fifo)
             self.memoria.memoria_fisica[moldura_livre] = pagina
@@ -71,6 +80,21 @@ class GerenciadorDeMemoria:
             self.tabela_paginas.atualizar_presenca(pagina, True, moldura_substituida)
         print(f'Falha de página: Página {pagina} carregada')
 
+    def substituir_pagina_round_robin(self, pagina):
+        if len(self.memoria.fila_round_robin) < self.memoria.tamanho_fisico:
+            moldura_livre = len(self.memoria.fila_round_robin)
+            self.memoria.memoria_fisica[moldura_livre] = pagina
+            self.memoria.fila_round_robin.append(pagina)
+            self.tabela_paginas.atualizar_presenca(pagina, True, moldura_livre)
+        else:
+            pagina_substituida = self.memoria.fila_round_robin.popleft()
+            moldura_substituida = self.tabela_paginas.obter_moldura(pagina_substituida)
+            self.memoria.memoria_fisica[moldura_substituida] = pagina
+            self.memoria.fila_round_robin.append(pagina)
+            self.tabela_paginas.atualizar_presenca(pagina_substituida, False, None)
+            self.tabela_paginas.atualizar_presenca(pagina, True, moldura_substituida)
+        print(f'Falha de página: Página {pagina} carregada')
+
 def main():
     tamanho_fisico = int(input('Digite o tamanho da memória física (em molduras): '))
     tamanho_virtual = int(input('Digite o tamanho da memória virtual (em páginas): '))
@@ -79,12 +103,9 @@ def main():
 
     memoria = Memoria(tamanho_fisico, tamanho_virtual)
     tabela_paginas = TabelaDePaginas(tamanho_virtual)
-    gerenciador = GerenciadorDeMemoria(memoria, tabela_paginas)
+    gerenciador = GerenciadorDeMemoria(memoria, tabela_paginas, algoritmo=algoritmo)
 
-    if algoritmo == 'ROUND ROBIN':
-        escalonador = Escalonador([Processo(i, enderecos) for i in range(1)], algoritmo='Round Robin')
-    else:
-        escalonador = Escalonador([Processo(i, enderecos) for i in range(1)], algoritmo='FCFS')
+    escalonador = Escalonador([Processo(i, enderecos) for i in range(1)], algoritmo=algoritmo)
 
     processo = escalonador.obter_proximo_processo()
     for endereco in processo.enderecos:
