@@ -36,7 +36,7 @@ class Processo:
         self.enderecos = enderecos
 
 class Escalonador:
-    def __init__(self, processos, algoritmo='FCFS'):
+    def __init__(self, processos, algoritmo='FIFO'):
         # Inicializa a lista de processos a serem escalonados
         self.processos = processos
         # Define o algoritmo de escalonamento a ser usado
@@ -47,8 +47,8 @@ class Escalonador:
         self.quantum = 2
 
     def obter_proximo_processo(self):
-        # Verifica se o algoritmo de escalonamento é FCFS
-        if self.algoritmo == 'FCFS':
+        # Verifica se o algoritmo de escalonamento é FIFO
+        if self.algoritmo == 'FIFO':
             # Obtém o próximo processo na lista
             processo = self.processos[self.index_atual]
             # Atualiza o índice atual para o próximo processo
